@@ -1,0 +1,23 @@
+Package: swotR
+Title: R package for downloading, filtering and processing SWOT river data
+Version: 0.0.1.9000
+Authors@R: 
+    person("Florian", "Betz", , "riverandscience@gmail.com", role="cre" )
+Description: This package allows to download and filter SWORD river network data and subsequently download, filter and analyze SWOT river data.
+License: AGPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+Imports: 
+    dplyr,
+    ggplot2,
+    httr2,
+    jsonlite,
+    readr,
+    rlang,
+    sf,
+    tibble
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
