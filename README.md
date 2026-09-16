@@ -6,7 +6,7 @@
      alt="swotR logo" />
 
 <!-- badges: start -->
-...
+
 <!-- badges: end -->
 
 ### R package for downloading and processing SWOT river data
