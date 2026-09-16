@@ -1,6 +1,6 @@
 # swotR
 
-<img src="man/figures/swotr_logo.png"
+<img src="man/figures/swotR_logo.png"
      align="right"
      height="180"
      alt="swotR logo" />
