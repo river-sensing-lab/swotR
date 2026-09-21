@@ -6,7 +6,8 @@
 #'
 #' @param continent Character. Continent code to download, e.g. `"EU"`.
 #' @param network Optional network ID used to filter the downloaded SWORD
-#'   data to a specific river network.
+#'   data to a specific river network. This works based on the "subnetork_id"
+#' of the SWORD dataset
 #' @param category Character. SWORD feature type to return. One of
 #'   `"reaches"`, `"nodes"`, or `"both"`.
 #' @param out_file Optional output file. For `category = "reaches"` or
@@ -261,7 +262,7 @@ sword_download <- function(
 
     if (!is.null(network)) {
 
-      if (!"network" %in% names(x)) {
+      if (!"subnetwork_id" %in% names(x)) {
         stop(
           "The SWORD ",
           sword_layer,
@@ -271,7 +272,7 @@ sword_download <- function(
       }
 
       x <- x[
-        as.character(x$network) %in% as.character(network),
+        as.character(x$subnetwork_id) %in% as.character(network),
         ,
         drop = FALSE
       ]

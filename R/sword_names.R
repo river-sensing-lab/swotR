@@ -78,6 +78,7 @@ sword_names <- function(
 
     name_candidates <- c(
       "river_name",
+      "river_name_local",
       "river_names",
       "name"
     )

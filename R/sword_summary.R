@@ -174,10 +174,11 @@ sword_summary <- function(
 
     named <- !is.na(river_name) &
       river_name != "" &
-      !tolower(river_name) %in% c(
+      !river_name %in% c(
         "nan",
         "none",
-        "na"
+        "na",
+        "NODATA"
       )
 
     sword$.river_name <- river_name
