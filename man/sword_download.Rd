@@ -7,44 +7,101 @@
 sword_download(
   continent = "EU",
   network = NULL,
-  category = "reaches",
+  category = c("reaches", "nodes", "both"),
   time_out = 1200,
   aoi = NULL,
-  out_file,
+  out_file = NULL,
   read = TRUE
 )
 }
 \arguments{
-\item{continent}{which continent to download, see also}
+\item{continent}{Character. Continent code to download, e.g. \code{"EU"}.}
 
-\item{network}{if known, you can filter directly by the network ID to e.g. obtain the network of a specific basin}
+\item{network}{Optional network ID used to filter the downloaded SWORD
+data to a specific river network.}
 
-\item{category}{what to get from the SWORD data, reaches or nodes. Can be "reaches" or "nodes"}
+\item{category}{Character. SWORD feature type to return. One of
+\code{"reaches"}, \code{"nodes"}, or \code{"both"}.}
 
-\item{time_out}{increase timeout of 60 seconds to something more meaningful for GB scale data;
-default is 20 minutes what should be sufficient even with slower internet connections.}
+\item{time_out}{Numeric. Download timeout in seconds. Default is 1200
+seconds (20 minutes).}
 
-\item{aoi}{sf object with your area of interest as polygon}
+\item{aoi}{Optional \code{sf} polygon defining an area of interest used to
+spatially filter the SWORD data.}
 
-\item{out_file}{output file of the selected reaches or nodes}
+\item{out_file}{Optional output file. For \code{category = "reaches"} or
+\code{"nodes"}, this specifies the output GeoPackage. For \code{category = "both"},
+both layers are written to the same GeoPackage as layers \code{"reaches"}
+and \code{"nodes"}.}
 
-\item{read}{whether the downloaded data should be directly read as sf object or not; default is TRUE}
+\item{read}{Logical. Whether the downloaded data should be returned as
+\code{sf} objects. Default is \code{TRUE}.}
 }
 \value{
-if read=TRUE, the function returns an sf object of the downloaded network, otherwise it just downloads the data and returns a
-message with the location where the data is stored
+If \code{read = TRUE} and \code{category} is \code{"reaches"} or \code{"nodes"}, an \code{sf}
+object is returned. If \code{category = "both"}, a named list containing
+\code{reaches} and \code{nodes} as \code{sf} objects is returned.
+
+If \code{read = FALSE}, the function returns invisibly after writing the
+requested data to \code{out_file}.
+
+#' @examples
+\dontrun{
+# Download SWORD reaches for Europe
+reaches <- sword_download(
+  continent = "EU",
+  category = "reaches"
+)
+
+# Download SWORD nodes for Europe
+nodes <- sword_download(
+  continent = "EU",
+  category = "nodes"
+)
+
+# Download reaches and nodes together
+sword <- sword_download(
+  continent = "EU",
+  category = "both"
+)
+
+# Access the individual layers
+sword$reaches
+sword$nodes
+
+# Download a specific SWORD network
+sword_network <- sword_download(
+  continent = "EU",
+  network = 232,
+  category = "both"
+)
+
+# Write reaches and nodes to a GeoPackage
+sword_download(
+  continent = "EU",
+  category = "both",
+  out_file = "sword_europe.gpkg",
+  read = FALSE
+)
+}
 }
 \description{
-Downloads SWORD river network data as foundation to work with the reaches and nodes of the SWOT river observations
+Downloads SWORD river network data as a foundation for working with
+reaches and nodes of SWOT river observations.
 }
 \details{
-Please note that the download links are hard coded, so consider looking in the source code if errors arise
+Please note that the download link is hard coded. If download errors
+occur, check whether a newer SWORD release is available.
+
+If \code{category = "both"}, reaches and nodes are downloaded, filtered
+independently, and returned as a named list containing \code{reaches} and
+\code{nodes}.
 }
 \references{
-\itemize{
-\item Altenau et al. (2021): The Surface Water and Ocean Topography (SWOT) Mission River Database (SWORD):
-A global river network for satellite data products". Water Resources Research. https://doi.org/10.1029/2021WR030054
-}
+Altenau et al. (2021): The Surface Water and Ocean Topography (SWOT)
+Mission River Database (SWORD): A global river network for satellite
+data products. Water Resources Research.
+\doi{10.1029/2021WR030054}
 }
 \author{
 Florian Betz
