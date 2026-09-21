@@ -25,16 +25,12 @@
 #' @references
 #' Altenau et al. (2021): The Surface Water and Ocean Topography (SWOT)
 #' Mission River Database (SWORD): A global river network for satellite
-#' data products. Water Resources Research.
-#' \doi{10.1029/2021WR030054}
+#' data products. Water Resources Research. https.doi.org/10.1029/2021WR030054
 #'
 #' @details
 #' Please note that the download link is hard coded. If download errors
-#' occur, check whether a newer SWORD release is available.
-#'
-#' If `category = "both"`, reaches and nodes are downloaded, filtered
-#' independently, and returned as a named list containing `reaches` and
-#' `nodes`.
+#' occur, check whether a newer SWORD release is available. Data is downloaded from
+#' the SWORD Zenodo repository: https://doi.org/10.5281/zenodo.10013982
 #'
 #' @return
 #' If `read = TRUE` and `category` is `"reaches"` or `"nodes"`, an `sf`
@@ -44,7 +40,7 @@
 #' If `read = FALSE`, the function returns invisibly after writing the
 #' requested data to `out_file`.
 #'
-#' #' @examples
+#' @examples
 #' \dontrun{
 #' # Download SWORD reaches for Europe
 #' reaches <- sword_download(
@@ -68,14 +64,8 @@
 #' sword$reaches
 #' sword$nodes
 #'
-#' # Download a specific SWORD network
-#' sword_network <- sword_download(
-#'   continent = "EU",
-#'   network = 232,
-#'   category = "both"
-#' )
-#'
-#' # Write reaches and nodes to a GeoPackage, be carefull, this is a large file
+#' # Write reaches and nodes to a GeoPackage
+#' # Be careful: this creates a large file
 #' sword_download(
 #'   continent = "EU",
 #'   category = "both",
