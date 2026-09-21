@@ -9,67 +9,140 @@ swot_ts(
   id = NULL,
   variables = NULL,
   quality = c("all", "good", "good_suspect", "usable"),
+  aggregate = c("none", "weekly", "monthly", "yearly"),
+  agg_fun = c("mean", "median", "min", "max"),
   format = c("wide", "long")
 )
 }
 \arguments{
 \item{swot_tibble}{A tibble containing SWOT RiverSP reach or node
 observations. The object must contain either a \code{reach_id} or \code{node_id}
-column and a \code{time} column. This is the case, if you generated the input th
-through the swot_download() function.}
+column and a \code{time} column. This is the case if the input was generated
+using \code{swot_download()}.}
 
 \item{id}{Optional character or numeric vector containing reach or node IDs
 to retain. If \code{NULL}, all features are retained.}
 
-\item{variables}{Character vector containing variabless to retain, for example
-\code{"wse"} or \code{c("wse", "width")}. If \code{NULL}, all columns are retained.}
+\item{variables}{Character vector containing variables to retain, for example
+\code{"wse"} or \code{c("wse", "width")}. If \code{NULL}, all columns are retained.
+Variables must be supplied when temporal aggregation is requested.}
 
 \item{quality}{Quality classes to retain. One of \code{"all"}, \code{"good"},
 \code{"good_suspect"}, or \code{"usable"}. \code{"good"} retains quality flag 0,
 \code{"good_suspect"} retains flags 0 and 1, and \code{"usable"} retains flags
 0, 1, and 2.}
 
+\item{aggregate}{Temporal aggregation of observations. One of \code{"none"},
+\code{"weekly"}, \code{"monthly"}, or \code{"yearly"}. The default \code{"none"} returns
+individual SWOT observations.}
+
+\item{agg_fun}{Aggregation function used when \code{aggregate} is not \code{"none"}.
+One of \code{"mean"}, \code{"median"}, \code{"min"}, or \code{"max"}. The default is \code{"mean"}.
+Minimum and maximum represent the minimum or maximum SWOT observation
+within the respective period and not necessarily the true hydrological
+minimum or maximum.}
+
 \item{format}{Output format. Either \code{"wide"} or \code{"long"}.}
 }
 \value{
 A tibble containing SWOT observations ordered by feature and time.
-In long format, the output contains the columns \code{variables}, \code{value},
-\code{uncertainty}, and \code{quality}.
+
+For non-aggregated output, original observations and associated metadata
+are retained. In long format, the output contains the columns \code{variables},
+\code{value}, \code{uncertainty}, and \code{quality}.
+
+For aggregated output, \code{time} represents the beginning of the aggregation
+period and \code{n_obs} gives the number of SWOT observations in that period.
+Uncertainty, quality flags, and observation-specific metadata are omitted.
 }
 \description{
 Extracts and prepares time series from SWOT RiverSP reach or node
 observations. The function automatically recognizes reach- or node-based
-input, optionally selects features and variabless, applies quality filtering,
-and returns observations ordered by feature and time.
+input, optionally selects features and variables, applies quality filtering,
+and optionally aggregates observations to weekly, monthly, or yearly
+time steps.
+}
+\details{
+Quality filtering is applied before temporal aggregation. Thus, aggregated
+values are calculated only from observations retained by the selected
+\code{quality} criterion.
+
+For weekly aggregation, weeks start on Monday. Monthly and yearly periods
+start on the first day of the respective month or year.
+
+When temporal aggregation is requested, uncertainty, quality flags, and
+observation-specific metadata such as cycle and pass IDs are not returned,
+because these refer to individual SWOT observations and cannot be directly
+interpreted for aggregated values.
+
+The column \code{n_obs} gives the number of SWOT observations contributing to
+each temporal period.
 }
 \examples{
 swot <- tibble::tibble(
-  reach_id = rep(c("21602300301", "21602300311"), each = 3),
+  reach_id = rep(c("21602300301", "21602300311"), each = 6),
   time = as.POSIXct(
     c(
       "2025-01-01", "2025-01-12", "2025-01-23",
-      "2025-01-03", "2025-01-14", "2025-01-25"
+      "2025-02-03", "2025-02-14", "2025-02-25",
+      "2025-01-03", "2025-01-14", "2025-01-25",
+      "2025-02-05", "2025-02-16", "2025-02-27"
     ),
     tz = "UTC"
   ),
-  wse = c(4.2, 4.4, 4.7, 3.8, 4.0, 4.3),
-  wse_u = c(0.08, 0.11, 0.07, 0.09, 0.12, 0.08),
-  width = c(120, 126, 134, 95, 101, 110),
-  width_u = c(4, 5, 4, 3, 4, 4),
-  reach_q = c(0, 1, 0, 0, 2, 3)
+  wse = c(
+    4.2, 4.4, 4.7, 4.5, 4.8, 5.1,
+    3.8, 4.0, 4.3, 4.1, 4.5, 4.7
+  ),
+  wse_u = c(
+    0.08, 0.11, 0.07, 0.09, 0.08, 0.10,
+    0.09, 0.12, 0.08, 0.10, 0.09, 0.11
+  ),
+  width = c(
+    120, 126, 134, 130, 138, 145,
+    95, 101, 110, 105, 114, 120
+  ),
+  width_u = c(
+    4, 5, 4, 4, 5, 5,
+    3, 4, 4, 4, 4, 5
+  ),
+  reach_q = c(
+    0, 1, 0, 0, 2, 1,
+    0, 2, 3, 0, 1, 0
+  )
 )
 
+# Original observations
 swot_ts(
   swot,
   variables = c("wse", "width"),
   quality = "usable"
 )
 
+# Long-format observations
 swot_ts(
   swot,
   variables = "wse",
   quality = "usable",
   format = "long"
+)
+
+# Monthly mean water surface elevation
+swot_ts(
+  swot,
+  variables = "wse",
+  quality = "usable",
+  aggregate = "monthly",
+  agg_fun = "mean"
+)
+
+# Monthly maximum observed water surface elevation
+swot_ts(
+  swot,
+  variables = "wse",
+  quality = "usable",
+  aggregate = "monthly",
+  agg_fun = "max"
 )
 
 }
