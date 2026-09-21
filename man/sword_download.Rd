@@ -18,7 +18,8 @@ sword_download(
 \item{continent}{Character. Continent code to download, e.g. \code{"EU"}.}
 
 \item{network}{Optional network ID used to filter the downloaded SWORD
-data to a specific river network.}
+data to a specific river network. This works based on the "subnetork_id"
+of the SWORD dataset}
 
 \item{category}{Character. SWORD feature type to return. One of
 \code{"reaches"}, \code{"nodes"}, or \code{"both"}.}
