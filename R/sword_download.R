@@ -100,6 +100,23 @@ sword_download <- function(
     )
   }
 
+  if (!is.null(aoi)) {
+
+    if (!inherits(aoi, "sf")) {
+      stop(
+        "'aoi' must be an sf object.",
+        call. = FALSE
+      )
+    }
+
+    if (is.na(sf::st_crs(aoi))) {
+      stop(
+        "'aoi' must have a defined coordinate reference system.",
+        call. = FALSE
+      )
+    }
+  }
+
 
   # --------------------------------------------------------------------------
   # Increase timeout
@@ -154,7 +171,7 @@ sword_download <- function(
 
 
   # --------------------------------------------------------------------------
-  # Unzip
+  # Extract archive
   # --------------------------------------------------------------------------
 
   message("Extracting SWORD data...")
@@ -207,18 +224,35 @@ sword_download <- function(
 
 
   # --------------------------------------------------------------------------
-  # Helper for reading and filtering one SWORD layer
+  # Helper function for reading and filtering a SWORD layer
   # --------------------------------------------------------------------------
 
-  read_sword_layer <- function(layer) {
+  read_sword_layer <- function(
+    sword_layer,
+    aoi_filter = NULL
+  ) {
 
-    message("Reading SWORD ", layer, "...")
+    message("Reading SWORD ", sword_layer, "...")
 
     x <- sf::st_read(
-      file,
-      layer = layer,
+      dsn = file,
+      layer = sword_layer,
       quiet = TRUE
     )
+
+
+    # ------------------------------------------------------------------------
+    # Check layer
+    # ------------------------------------------------------------------------
+
+    if (!inherits(x, "sf")) {
+      stop(
+        "SWORD layer '",
+        sword_layer,
+        "' could not be read as an sf object.",
+        call. = FALSE
+      )
+    }
 
 
     # ------------------------------------------------------------------------
@@ -230,7 +264,7 @@ sword_download <- function(
       if (!"network" %in% names(x)) {
         stop(
           "The SWORD ",
-          layer,
+          sword_layer,
           " layer does not contain a 'network' column.",
           call. = FALSE
         )
@@ -238,12 +272,14 @@ sword_download <- function(
 
       x <- x[
         as.character(x$network) %in% as.character(network),
+        ,
+        drop = FALSE
       ]
 
       if (nrow(x) == 0) {
         warning(
           "No ",
-          layer,
+          sword_layer,
           " found for network ID ",
           paste(network, collapse = ", "),
           ".",
@@ -257,34 +293,85 @@ sword_download <- function(
     # Spatial filter
     # ------------------------------------------------------------------------
 
-    if (!is.null(aoi)) {
+    if (!is.null(aoi_filter)) {
 
-      if (!inherits(aoi, "sf") &&
-          !inherits(aoi, "sfc")) {
+      message("Spatially filtering ", sword_layer, "...")
+
+      # Check AOI
+      if (!inherits(aoi_filter, "sf")) {
         stop(
-          "'aoi' must be an sf or sfc object.",
+          "'aoi' must be an sf object.",
           call. = FALSE
         )
       }
 
-      message("Spatially filtering ", layer, "...")
+      if (is.na(sf::st_crs(aoi_filter))) {
+        stop(
+          "'aoi' must have a defined coordinate reference system.",
+          call. = FALSE
+        )
+      }
 
-      aoi_geometry <- sf::st_geometry(aoi)
+      if (is.na(sf::st_crs(x))) {
+        stop(
+          "The SWORD ",
+          sword_layer,
+          " layer has no defined coordinate reference system.",
+          call. = FALSE
+        )
+      }
 
-      if (sf::st_crs(aoi_geometry) != sf::st_crs(x)) {
-        aoi_geometry <- sf::st_transform(
-          aoi_geometry,
+
+      # ----------------------------------------------------------------------
+      # Transform AOI to SWORD CRS if necessary
+      # ----------------------------------------------------------------------
+
+      if (sf::st_crs(aoi_filter) != sf::st_crs(x)) {
+
+        aoi_filter <- sf::st_transform(
+          aoi_filter,
           sf::st_crs(x)
         )
       }
 
-      aoi_geometry <- sf::st_union(aoi_geometry)
 
-      x <- sf::st_filter(
+      # ----------------------------------------------------------------------
+      # Identify features intersecting the AOI
+      # ----------------------------------------------------------------------
+
+      hits <- sf::st_intersects(
         x,
-        aoi_geometry
+        aoi_filter
       )
+
+      keep <- lengths(hits) > 0
+
+      # Retain original SWORD geometries
+      x <- x[
+        keep,
+        ,
+        drop = FALSE
+      ]
+
+
+      # ----------------------------------------------------------------------
+      # Check result
+      # ----------------------------------------------------------------------
+
+      if (nrow(x) == 0) {
+        warning(
+          "No ",
+          sword_layer,
+          " intersect the supplied AOI.",
+          call. = FALSE
+        )
+      }
     }
+
+
+    # ------------------------------------------------------------------------
+    # Return layer
+    # ------------------------------------------------------------------------
 
     x
   }
@@ -297,13 +384,24 @@ sword_download <- function(
   if (category == "both") {
 
     out <- list(
-      reaches = read_sword_layer("reaches"),
-      nodes = read_sword_layer("nodes")
+
+      reaches = read_sword_layer(
+        sword_layer = "reaches",
+        aoi_filter = aoi
+      ),
+
+      nodes = read_sword_layer(
+        sword_layer = "nodes",
+        aoi_filter = aoi
+      )
     )
 
   } else {
 
-    out <- read_sword_layer(category)
+    out <- read_sword_layer(
+      sword_layer = category,
+      aoi_filter = aoi
+    )
   }
 
 
@@ -312,6 +410,8 @@ sword_download <- function(
   # --------------------------------------------------------------------------
 
   if (!is.null(out_file)) {
+
+    message("Writing SWORD data...")
 
     if (category == "both") {
 
@@ -336,7 +436,8 @@ sword_download <- function(
       sf::st_write(
         out,
         out_file,
-        delete_dsn = TRUE,
+        layer = category,
+        delete_layer = TRUE,
         quiet = TRUE
       )
     }
