@@ -22,13 +22,12 @@ remotes::install_github("river-sensing-lab/swotR")
 
 ```
 
-### OVerview of the package functionality
+### Overview of the package functionality
 The package supports three major steps for working with SWOT riverSP data. Vignettes explaining the individual steps in full detail will be available soon.
 
 1) Downloading, filtering and preprocessing SWORD river network data
 2) Downloading. filtering and aggregating SWOT riverSP data
 3) Analyzing SWOT data availability on the reach or node level and making visualization of river profiles and spatial-temporal development of variables
-
 
 ### Quick use guide
 This example shows how to download the SWORD river network for the Rhone river basin in France, filtering it to a specific river and then download and process SWOT water surface elevation data for the reaches of this river (The Drome).
@@ -52,7 +51,7 @@ library(sf)
 library(dplyr)
 
 #Load the Rhone basin polygon
-data(rhone_basin)
+data(aoi_rhone)
 
 #Download the SWORD reaches
 rhone<-sword_download(continent="EU", category="reaches", aoi=rhone_basin)
