@@ -15,7 +15,8 @@ swot_download(
   out_format = "csv",
   fields = NULL,
   collection_name = "SWOT_L2_HR_RiverSP_D",
-  quiet = FALSE
+  quiet = FALSE,
+  discharge = NULL
 )
 }
 \arguments{
@@ -47,6 +48,12 @@ If NULL, a default set of variables is downloaded.}
 \code{"SWOT_L2_HR_RiverSP_D"}.}
 
 \item{quiet}{Logical. If FALSE, progress messages are printed.}
+
+\item{discharge}{Optional Level 4 discharge algorithm(s): \code{"consensus"},
+\code{"hivdi"}, \code{"metroman"}, \code{"momma"}, \code{"sad"},
+\code{"sic4dvar"}, or \code{"lakeflow"}. Default \code{NULL} downloads
+only Level 2 variables. Discharge is available for reaches through
+the RiverSP 2.0 collection.}
 }
 \value{
 A tibble for \code{out_format = "csv"} or an sf object for
@@ -57,6 +64,10 @@ observations are found.
 Downloads SWOT RiverSP time series for river nodes or reaches using
 NASA PO.DAAC's Hydrocron API. Features can either be supplied directly through their SWORD node/reach IDs
 or through an sf object containing a \code{node_id} or \code{reach_id} column.
+}
+\details{
+Level 4 SoS discharge NoData values (-999999999999) are
+converted to NA in all downloaded \verb{sos_*_q} columns.
 }
 \author{
 Florian Betz

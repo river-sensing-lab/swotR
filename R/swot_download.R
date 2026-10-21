@@ -20,7 +20,15 @@
 #'   If NULL, a default set of variables is downloaded.
 #' @param collection_name Hydrocron SWOT collection. Defaults to
 #'   `"SWOT_L2_HR_RiverSP_D"`.
+#' @param discharge Optional Level 4 discharge algorithm(s): `"consensus"`,
+#'   `"hivdi"`, `"metroman"`, `"momma"`, `"sad"`,
+#'   `"sic4dvar"`, or `"lakeflow"`. Default `NULL` downloads
+#'   only Level 2 variables. Discharge is available for reaches through
+#'   the RiverSP 2.0 collection.
 #' @param quiet Logical. If FALSE, progress messages are printed.
+#'
+#' @details Level 4 SoS discharge NoData values (-999999999999) are
+#'   converted to NA in all downloaded `sos_*_q` columns.
 #'
 #' @return A tibble for `out_format = "csv"` or an sf object for
 #' `out_format = "geojson"`. Returns an empty tibble/sf object if no
@@ -40,7 +48,8 @@ swot_download <- function(network = NULL,
                           out_format = "csv",
                           fields = NULL,
                           collection_name = "SWOT_L2_HR_RiverSP_D",
-                          quiet = FALSE) {
+                          quiet = FALSE,
+                          discharge = NULL) {
 
   # --------------------------------------------------------------------------
   # Argument checks
@@ -57,6 +66,47 @@ swot_download <- function(network = NULL,
     quality,
     c("all", "good", "good_suspect", "usable")
   )
+
+  # Level 4 SoS discharge estimates are exposed through Hydrocron
+  # on the RiverSP 2.0 reach collection. Preserve default behavior
+  # for calls that do not request discharge.
+  discharge_fields <- c(
+    consensus = "sos_consensus_q",
+    hivdi = "sos_hivdi_q",
+    metroman = "sos_metroman_q",
+    momma = "sos_momma_q",
+    sad = "sos_sad_q",
+    sic4dvar = "sos_sic4dvar_q",
+    lakeflow = "sos_lakeflow_q"
+  )
+
+  if (!is.null(discharge)) {
+    if (!is.character(discharge) || !length(discharge) ||
+        anyNA(discharge) || any(!discharge %in% names(discharge_fields))) {
+      stop(
+        "'discharge' must contain one or more of: ",
+        paste(names(discharge_fields), collapse = ", "),
+        call. = FALSE
+      )
+    }
+    if (type != "Reach") {
+      stop("Level 4 discharge is available only for type = 'Reach'.",
+           call. = FALSE)
+    }
+    if (!identical(collection_name, "SWOT_L2_HR_RiverSP_D") &&
+        !identical(collection_name, "SWOT_L2_HR_RiverSP_2.0")) {
+      stop("Level 4 discharge requires collection_name = ",
+           "'SWOT_L2_HR_RiverSP_2.0'.", call. = FALSE)
+    }
+    if (identical(collection_name, "SWOT_L2_HR_RiverSP_D") && !quiet) {
+      message("Using SWOT_L2_HR_RiverSP_2.0 for Level 4 discharge.")
+    }
+    collection_name <- "SWOT_L2_HR_RiverSP_2.0"
+    if (out_format != "csv") {
+      stop("Level 4 discharge retrieval currently supports out_format = 'csv'.",
+           call. = FALSE)
+    }
+  }
 
   if (is.null(network) && is.null(id)) {
     stop(
@@ -285,6 +335,14 @@ swot_download <- function(network = NULL,
         "sword_version"
       )
     }
+  }
+
+  if (!is.null(discharge)) {
+    # Include identifiers and timestamps even for custom field selections.
+    fields <- unique(c(
+      "reach_id", "time_str", fields,
+      unname(discharge_fields[unique(discharge)])
+    ))
   }
 
   fields <- paste(
@@ -567,6 +625,20 @@ swot_download <- function(network = NULL,
     )
   }
 
+
+  # --------------------------------------------------------------------------
+  # Convert Level 4 discharge NoData values to NA
+  # --------------------------------------------------------------------------
+
+  # Apply to all SoS discharge columns, including those explicitly requested
+  # through `fields` without using the `discharge` argument.
+  sos_cols <- grep("^sos_.*_q$", names(out), value = TRUE)
+
+  for (col in sos_cols) {
+    values <- suppressWarnings(as.numeric(out[[col]]))
+    values[!is.na(values) & values == -999999999999] <- NA_real_
+    out[[col]] <- values
+  }
 
   # --------------------------------------------------------------------------
   # Parse observation time
